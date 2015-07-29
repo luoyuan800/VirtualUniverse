@@ -13,12 +13,16 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static luo.gavin.output.Output.LOG;
 
@@ -36,15 +40,21 @@ public class Universe implements Runnable {
     private ScheduledFuture myFuture;
     private Map<Galaxy, ScheduledFuture<?>> galaxies;
     private Stardust stardust;
+    private int count;
 
-    public void removeGalaxy(Galaxy galaxy){
+    public void removeGalaxy(Galaxy galaxy) {
         ScheduledFuture future = galaxies.get(galaxy);
         future.cancel(false);
-        galaxies.remove(galaxy);
     }
+
     public void run() {
-        if(myFuture!=null) {
+        if (myFuture != null) {
             buildGalaxy();
+            count++;
+            if (count == 100) {
+                count = 0;
+                age++;
+            }
         }
 
     }
@@ -65,14 +75,25 @@ public class Universe implements Runnable {
 
     private void buildGalaxy() {
         if (makeCalculate()) {
-            LOG("Build a new Galaxy");
             int length = random.nextInt(this.getLength() / 500);
             int width = random.nextInt(this.getWidth() / 500);
-            double radii = Math.sqrt((long)length * (long)length + (long)width * (long)width);
+            double radii = Math.sqrt((long) length * (long) length + (long) width * (long) width);
             int x = random.nextInt(this.getLength() / 2) * (random.nextBoolean() ? -1 : 1);
             int y = random.nextInt(this.getWidth() / 2) * (random.nextBoolean() ? -1 : 1);
-            Galaxy galaxy = new Galaxy(x, y, radii, this);
-            this.galaxies.put(galaxy, executor.scheduleAtFixedRate(galaxy, 0, period, TimeUnit.MILLISECONDS));
+            if (getGalaxyByPoint(x, y) == null) {
+                Galaxy galaxy = new Galaxy(x, y, radii, this);
+                for(Galaxy g : galaxies.keySet()){
+                    if(g.isTouch(galaxy)){
+                        galaxy.setRadii(radii/2);
+                    }
+                    if(galaxy.contains(galaxy) != Base.NOT_CONTAIN){
+                        return;
+                    }
+                }
+                LOG("Build a new Galaxy");
+                this.galaxies.put(galaxy, executor.scheduleAtFixedRate(galaxy, 0, period, TimeUnit.MILLISECONDS));
+
+            }
         }
     }
 
@@ -108,7 +129,39 @@ public class Universe implements Runnable {
         StringBuilder sb = new StringBuilder(name);
         sb.append("\n").append("Age: ").append(age);
         sb.append("\n").append("Running Status: ").append(pause ? "Suspend" : "Running");
+        sb.append("\n").append("Current have Galaxy: ").append(galaxies.size());
+        sb.append("\n").append("There ").append(liveGalaxies().size()).append(" are survival.").
+                append(" And ").append(getBlackHoles().size()).append(" are black hold");
         return sb.toString();
+    }
+
+    public Set<Galaxy> liveGalaxies() {
+        Set<Galaxy> lives = new HashSet<Galaxy>();
+        for (Galaxy galaxy : galaxies.keySet()) {
+            if (!galaxy.isBlack() && !galaxy.isDie()) {
+                lives.add(galaxy);
+            }
+        }
+        return lives;
+    }
+
+    public Set<Galaxy> getBlackHoles() {
+        Set<Galaxy> bh = new HashSet<Galaxy>();
+        for (Galaxy galaxy : galaxies.keySet()) {
+            if (galaxy.isBlack()) {
+                bh.add(galaxy);
+            }
+        }
+        return bh;
+    }
+
+    public Galaxy getGalaxyByPoint(int x, int y) {
+        for (Galaxy galaxy : galaxies.keySet()) {
+            if (galaxy.isInside(x, y)) {
+                return galaxy;
+            }
+        }
+        return null;
     }
 
     public int getLength() {
@@ -152,6 +205,8 @@ public class Universe implements Runnable {
                     System.out.println("pause: Suspend the virtual");
                     System.out.println("resume: Resume the virtual");
                     System.out.println("status: Show current status of  the virtual");
+                    System.out.println("start: Begging to run the Virtual");
+                    System.out.println("search: Try to search a galaxy on the special pointer. Example: 'search galaxy: 1234567, 1234567'");
                 } else if (command.equalsIgnoreCase("quit")) {
                     this.running = false;
                     System.out.println("Begging to stop Virtual");
@@ -172,9 +227,26 @@ public class Universe implements Runnable {
                     }
                 } else if (command.equalsIgnoreCase("status")) {
                     System.out.println(universe.toString());
-                } else if (command.equalsIgnoreCase("start")){
+                } else if (command.equalsIgnoreCase("start")) {
                     System.out.println("Start the Virtual");
                     universe.start();
+                } else if (command.matches("search galaxy: (-*\\d+), (-*\\d+)")) {
+                    Matcher matcher = Pattern.compile("search galaxy: (-*\\d+), (-*\\d+)").matcher(command);
+                    if (matcher.find()) {
+                        String x = matcher.group(1);
+                        String y = matcher.group(2);
+                        System.out.println(String.format("Try to find if there a Galaxy on x=%s, y=%s ...", x, y));
+                        try {
+                            Galaxy galaxy = universe.getGalaxyByPoint(Integer.parseInt(x), Integer.parseInt(y));
+                            if (galaxy != null) {
+                                System.out.println("There a galaxy has been found: \n" + galaxy);
+                            } else {
+                                System.out.println("Not galaxy found on x=" + x + ", y=" + y);
+                            }
+                        }catch (NumberFormatException e){
+                            System.out.println("Input is invalid: " + e.getMessage());
+                        }
+                    }
                 }
             }
         }

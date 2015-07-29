@@ -25,7 +25,7 @@ public class Output extends ArrayList<String> {
         output.add(msg);
         long current = System.currentTimeMillis();
         long interval = current - latest;
-        if (interval > 10000 || output.size() > 100) {
+        if (interval > 10000 || output.size() > 100 || msg.matches("Finished stop the Virtual")) {
             output();
         }
     }
