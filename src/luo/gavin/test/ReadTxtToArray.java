@@ -1,5 +1,7 @@
 package luo.gavin.test;
 
+import luo.gavin.virtual.Base;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -9,13 +11,25 @@ import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class ReadTxtToArray {
 
     public static void main(String[] args) throws IOException{
-        InetAddress address = InetAddress.getByName("rd-aix02");
-        System.out.println(address.getHostName() + ", " + address.getHostAddress());
-        InetAddress address1 = InetAddress.getByName("10.4.114.96");
-        System.out.println(address1.getHostName() + ", " + address1.getHostAddress());
+        BaseImp b1 = new BaseImp(10, 10, 10);
+        BaseImp b2 = new BaseImp(100,10,500);
+        System.out.println(b1.contains(b2));
+    }
+
+    static class BaseImp extends Base{
+
+        public BaseImp(int x, int y, int radii) {
+            super(x, y, radii);
+        }
+
+        @Override
+        public Random getRandom() {
+            return null;
+        }
     }
 }

@@ -11,10 +11,8 @@ package luo.gavin.virtual;
 
 import java.util.Random;
 
-import static luo.gavin.output.Output.LOG;
 
 public class Planet extends Base implements Runnable {
-    private double stardust;
     public Planet(Galaxy galaxy, int x, int y, int radii, double stardust) {
         super(x, y, radii);
         this.stardust = stardust;

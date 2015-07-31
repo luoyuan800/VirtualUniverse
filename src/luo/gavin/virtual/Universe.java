@@ -9,6 +9,8 @@
 
 package luo.gavin.virtual;
 
+import luo.gavin.output.Output;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -24,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static luo.gavin.output.Output.LOG;
 
 public class Universe implements Runnable {
     private static final int period = 100;
@@ -41,6 +42,8 @@ public class Universe implements Runnable {
     private Map<Galaxy, ScheduledFuture<?>> galaxies;
     private Stardust stardust;
     private int count;
+    private Output output;
+    private Integer limit;
 
     public void removeGalaxy(Galaxy galaxy) {
         ScheduledFuture future = galaxies.get(galaxy);
@@ -59,7 +62,11 @@ public class Universe implements Runnable {
 
     }
 
+    protected void LOG(String msg){
+        this.output.LOG(msg);
+    }
     public Universe(String name) {
+        output = new Output(this.getClass());
         this.age = 0;
         this.name = name;
         this.length = Math.abs(random.nextInt());
@@ -69,15 +76,36 @@ public class Universe implements Runnable {
         new Thread(new Manager(this)).start();
     }
 
+    public Universe(String name, int length, int width){
+        output = new Output(this.getClass());
+        this.age = 0;
+        this.name = name;
+        this.length = length;
+        this.width = width;
+        this.galaxies = new HashMap<Galaxy, ScheduledFuture<?>>(50);
+        this.stardust = new Stardust(this);
+        new Thread(new Manager(this)).start();
+    }
+
+    public Universe(String name, int limit){
+        this(name);
+        this.limit = limit;
+    }
+    public Universe(String name, int length, int width, int limit){
+        this(name, length, width);
+        this.limit = limit;
+    }
+
     public boolean makeCalculate() {
-        return Math.abs((random.nextDouble() + random.nextInt()) / random.nextInt()) >= galaxies.size() / 500;
+        return !(limit != null && galaxies.size() >= limit) && Math.abs((random.nextDouble() + random.nextInt()) / random.nextInt()) >= galaxies.size() / 500;
     }
 
     private void buildGalaxy() {
         if (makeCalculate()) {
             int length = random.nextInt(this.getLength() / 500);
             int width = random.nextInt(this.getWidth() / 500);
-            int radii = Math.abs((int)Math.sqrt(length * length + width * width));
+            int radii = random.nextInt((length+width)/2)/(limit!=null? limit : 1000);
+            if(radii <= 0) return;
             int x = random.nextInt(this.getLength() / 2) * (random.nextBoolean() ? -1 : 1);
             int y = random.nextInt(this.getWidth() / 2) * (random.nextBoolean() ? -1 : 1);
             if (getGalaxyByPoint(x, y) == null) {
@@ -86,11 +114,13 @@ public class Universe implements Runnable {
                     if(g.isTouch(galaxy)){
                         galaxy.setRadii(radii/2);
                     }
-                    if(galaxy.contains(galaxy) != Base.NOT_CONTAIN){
+                    if(g.contains(galaxy) != Base.NOT_CONTAIN){
                         return;
                     }
                 }
                 LOG(String.format("Build a new Galaxy on x=%s, y=%s.", x, y));
+                galaxy.start();
+                galaxy.buildStar();
                 this.galaxies.put(galaxy, executor.scheduleAtFixedRate(galaxy, 0, period, TimeUnit.MILLISECONDS));
 
             }
@@ -109,7 +139,10 @@ public class Universe implements Runnable {
         myFuture.cancel(true);
         myFuture = null;
         LOG("Stop Universe Executor");
-        executor.shutdownNow();
+        executor.shutdown();
+        for(Galaxy galaxy : galaxies.keySet()){
+            galaxy.stop();
+        }
         return true;
     }
 
@@ -174,6 +207,10 @@ public class Universe implements Runnable {
 
     public Stardust getStardust() {
         return stardust;
+    }
+
+    public ScheduledExecutorService getExecutor() {
+        return executor;
     }
 
     private class Manager implements Runnable {
@@ -253,6 +290,6 @@ public class Universe implements Runnable {
     }
 
     public static void main(String... args) {
-        new Universe("Test");
+        new Universe("Test", 20);
     }
 }

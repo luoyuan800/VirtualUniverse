@@ -2,3 +2,5 @@
 \\d+
 *.class
 *.class
+*/*.class
+*/*/*.class

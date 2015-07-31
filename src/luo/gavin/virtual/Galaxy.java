@@ -12,17 +12,14 @@ package luo.gavin.virtual;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import static luo.gavin.output.Output.LOG;
 
 public class Galaxy extends Base implements Runnable {
     private String name;
     private Universe universe;
-    private double stardust;
     private Random random;
     private Map<Star, ScheduledFuture<?>> stars;
     private Map<Planet, ScheduledFuture<?>> planets;
@@ -33,12 +30,11 @@ public class Galaxy extends Base implements Runnable {
     public Galaxy(int x, int y, int radii, Universe universe) {
         super(x, y, radii);
         this.universe = universe;
-        stardust = universe.getStardust().getStardustWeigh(x, y);
         random = new Random(universe.getSeed());
         stars = new HashMap<Star, ScheduledFuture<?>>();
         planets = new HashMap<Planet, ScheduledFuture<?>>();
-        executor = Executors.newScheduledThreadPool(10);
-        buildStar();
+        executor = universe.getExecutor();
+        stardust = universe.getStardust().getStardustWeigh(x, y);
     }
 
     public void run() {
@@ -63,7 +59,7 @@ public class Galaxy extends Base implements Runnable {
         LOG(String.format("A Galaxy die and become black hold on : %s, %s.", getX(), getY()));
     }
 
-    private void buildStar() {
+    public void buildStar() {
         boolean next = true;
         while (this.stardust > 0 && next) {
             int[] pointer = getRandomPoint();
@@ -76,28 +72,40 @@ public class Galaxy extends Base implements Runnable {
             next = random.nextBoolean();
             this.stars.put(star, executor.scheduleAtFixedRate(star, 0, 100, TimeUnit.MILLISECONDS));
             LOG(String.format("A new Star born on : %s, %s.", x, y));
+            star.start();
         }
     }
 
-    private void buildPlanet() {
+    public void buildPlanet() {
         if (makeCalculate()) {
             int[] pointer = getRandomPoint();
             int x = pointer[0];
             int y = pointer[1];
             double stardust = this.stardust * random.nextDouble() * random.nextDouble() * random.nextDouble();
             this.stardust -= stardust;
-            int radii = (int)(random.nextInt(this.getRadii()) * random.nextFloat());
+            int radii = getRadii();
             Planet planet = new Planet(this, x, y, radii, stardust);
             Star star = getStar(x, y);
-            if(star.contains(planet) != NOT_CONTAIN){
+            if(star!=null){
                 return;
             }
             Planet p1 = getPlanet(x, y);
-            if(p1!=null && p1.contains(planet)!=NOT_CONTAIN){
+            if(p1!=null){
                 return;
+            }
+            for(Star star1 : stars.keySet()){
+                if(star1.isTouch(planet)){
+                    return;
+                }
+            }
+            for(Planet p2 : planets.keySet()){
+                if(p2.isTouch(planet)){
+                    return;
+                }
             }
             this.planets.put(planet, executor.scheduleAtFixedRate(planet, 0, 100, TimeUnit.MILLISECONDS));
             LOG(String.format("A new Planet born on : %s, %s.", x, y));
+            planet.start();
         }
     }
 
@@ -121,7 +129,8 @@ public class Galaxy extends Base implements Runnable {
 
     private boolean makeCalculate() {
         int base = Math.abs((int)Math.floor(stardust));
-        return base * random.nextFloat()/(stars.size() + planets.size())> Math.abs(random.nextInt(base));
+        int next = random.nextInt(base);
+        return next * (stars.size() + planets.size()) <= base;
     }
 
     public String getName() {

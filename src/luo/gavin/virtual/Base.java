@@ -1,21 +1,34 @@
 package luo.gavin.virtual;
 
+import luo.gavin.output.Output;
+
 import java.util.Random;
 
 public abstract class Base {
+    protected double stardust;
     private long age;
     private int count;
     private int x;
     private int y;
     private int radii;
+    protected Output output;
+    protected void LOG(String msg){
+        output.LOG(msg);
+    }
 
     public abstract Random getRandom();
     public Base(int x, int y, int radii) {
         this.x = x;
         this.y = y;
         this.radii = radii;
+        this.output = new Output(this.getClass().getSimpleName() + x + "_" + y);
     }
 
+    public void start(){
+        LOG(String.format("Point: x=%s, y=%s; Radii: %s; Stardust: %s", x, y, radii, stardust));
+        LOG("------");
+
+    }
     public void age() {
         count++;
         if (count == 100) {
@@ -75,5 +88,19 @@ public abstract class Base {
         int x = this.getX() + getRandom().nextInt(this.getRadii()) * (getRandom().nextBoolean() ? -1 : 1);
         int y = this.getY() + getRandom().nextInt(this.getRadii()) * (getRandom().nextBoolean() ? -1 : 1);
         return new int[]{x, y};
+    }
+
+    protected int getRandomRadii(){
+        int radii = (int)(getRandom().nextInt(this.radii) * getRandom().nextFloat());
+        if(radii<=0) return 1;
+        return radii;
+    }
+
+    public String toString(){
+        return String.format("%s x=%s, y=%s, stardust=%s", this.getClass().getSimpleName(), x, y, stardust);
+    }
+
+    public void stop(){
+        LOG("Finished stop " + toString());
     }
 }
