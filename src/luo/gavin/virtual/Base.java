@@ -1,13 +1,16 @@
 package luo.gavin.virtual;
 
+import java.util.Random;
+
 public abstract class Base {
     private long age;
     private int count;
     private int x;
     private int y;
-    private double radii;
+    private int radii;
 
-    public Base(int x, int y, double radii) {
+    public abstract Random getRandom();
+    public Base(int x, int y, int radii) {
         this.x = x;
         this.y = y;
         this.radii = radii;
@@ -46,19 +49,19 @@ public abstract class Base {
         return y;
     }
 
-    public double getRadii() {
+    public int getRadii() {
         return radii;
     }
 
-    public void setRadii(double radii) {
+    public void setRadii(int radii) {
         this.radii = radii;
     }
 
     public int contains(Base other) {
-        if (other.isInside((int) (x + radii), y) && other.isInside((int) (x - radii), y) && other.isInside(x, (int) (y + radii)) && other.isInside(x, (int) (y - radii))) {
+        if (other.isInside(x + radii, y) && other.isInside(x - radii, y) && other.isInside(x, y + radii) && other.isInside(x, y - radii)) {
             return CONTAINED;
-        } else if (isInside((int) (other.x + other.radii), y) && isInside((int) (other.x - other.radii), y)
-                && isInside(other.x, (int) (other.y + other.radii)) && isInside(other.x, (int) (other.y - other.radii))) {
+        } else if (isInside(other.x + other.radii, y) && isInside(other.x - other.radii, y)
+                && isInside(other.x, other.y + other.radii) && isInside(other.x, other.y - other.radii)) {
             return CONTAIN;
         }
         return NOT_CONTAIN;
@@ -67,4 +70,10 @@ public abstract class Base {
     public static final int NOT_CONTAIN = 0;
     public static final int CONTAIN = 1;
     public static final int CONTAINED = 2;
+
+    public int[] getRandomPoint(){
+        int x = this.getX() + getRandom().nextInt(this.getRadii()) * (getRandom().nextBoolean() ? -1 : 1);
+        int y = this.getY() + getRandom().nextInt(this.getRadii()) * (getRandom().nextBoolean() ? -1 : 1);
+        return new int[]{x, y};
+    }
 }

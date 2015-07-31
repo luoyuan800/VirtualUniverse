@@ -19,7 +19,7 @@ import java.util.ArrayList;
 public class Output extends ArrayList<String> {
     private static final Output output = new Output();
     private static long latest = System.currentTimeMillis();
-    private static File file = new File(""  + System.currentTimeMillis());
+    private static File file = new File(""  + System.currentTimeMillis() + ".opr");
 
     public synchronized static void LOG(String msg) {
         output.add(msg);

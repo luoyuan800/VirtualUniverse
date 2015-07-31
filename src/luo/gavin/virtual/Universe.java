@@ -77,7 +77,7 @@ public class Universe implements Runnable {
         if (makeCalculate()) {
             int length = random.nextInt(this.getLength() / 500);
             int width = random.nextInt(this.getWidth() / 500);
-            double radii = Math.sqrt((long) length * (long) length + (long) width * (long) width);
+            int radii = Math.abs((int)Math.sqrt(length * length + width * width));
             int x = random.nextInt(this.getLength() / 2) * (random.nextBoolean() ? -1 : 1);
             int y = random.nextInt(this.getWidth() / 2) * (random.nextBoolean() ? -1 : 1);
             if (getGalaxyByPoint(x, y) == null) {
@@ -90,7 +90,7 @@ public class Universe implements Runnable {
                         return;
                     }
                 }
-                LOG("Build a new Galaxy");
+                LOG(String.format("Build a new Galaxy on x=%s, y=%s.", x, y));
                 this.galaxies.put(galaxy, executor.scheduleAtFixedRate(galaxy, 0, period, TimeUnit.MILLISECONDS));
 
             }

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://L://VirtualUniverse/VirtualUniverse.iml" filepath="L://VirtualUniverse/VirtualUniverse.iml" />
+      <module fileurl="file://$PROJECT_DIR$/VirtualUniverse.iml" filepath="$PROJECT_DIR$/VirtualUniverse.iml" />
     </modules>
   </component>
 </project>

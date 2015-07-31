@@ -30,7 +30,7 @@ public class Galaxy extends Base implements Runnable {
     private boolean die;
     private ScheduledExecutorService executor;
 
-    public Galaxy(int x, int y, double radii, Universe universe) {
+    public Galaxy(int x, int y, int radii, Universe universe) {
         super(x, y, radii);
         this.universe = universe;
         stardust = universe.getStardust().getStardustWeigh(x, y);
@@ -39,7 +39,6 @@ public class Galaxy extends Base implements Runnable {
         planets = new HashMap<Planet, ScheduledFuture<?>>();
         executor = Executors.newScheduledThreadPool(10);
         buildStar();
-        LOG(String.format("A new Galaxy born on : %s, %s.", x, y));
     }
 
     public void run() {
@@ -67,26 +66,38 @@ public class Galaxy extends Base implements Runnable {
     private void buildStar() {
         boolean next = true;
         while (this.stardust > 0 && next) {
-            int x = this.getX() + random.nextInt((int) Math.floor(this.getRadii())) * (random.nextBoolean() ? -1 : 1);
-            int y = this.getY() + random.nextInt((int) Math.floor(this.getRadii())) * (random.nextBoolean() ? -1 : 1);
-            double stardust = this.stardust * random.nextDouble() * random.nextDouble() * random.nextDouble();
+            int[] pointer = getRandomPoint();
+            int x = pointer[0];
+            int y = pointer[1];
+            double stardust = this.stardust * random.nextDouble() * random.nextFloat() * random.nextFloat();
             this.stardust -= stardust;
-            double radii = random.nextInt((int) Math.floor(this.getRadii())) * random.nextDouble();
-            Star star = new Star(this, x, y, (int) Math.floor(radii), stardust);
+            int radii = (int)(random.nextInt(this.getRadii()) * random.nextFloat());
+            Star star = new Star(this, x, y, radii, stardust);
             next = random.nextBoolean();
             this.stars.put(star, executor.scheduleAtFixedRate(star, 0, 100, TimeUnit.MILLISECONDS));
+            LOG(String.format("A new Star born on : %s, %s.", x, y));
         }
     }
 
     private void buildPlanet() {
         if (makeCalculate()) {
-            int x = this.getX() + random.nextInt((int) Math.floor(this.getRadii())) * (random.nextBoolean() ? -1 : 1);
-            int y = this.getY() + random.nextInt((int) Math.floor(this.getRadii())) * (random.nextBoolean() ? -1 : 1);
+            int[] pointer = getRandomPoint();
+            int x = pointer[0];
+            int y = pointer[1];
             double stardust = this.stardust * random.nextDouble() * random.nextDouble() * random.nextDouble();
             this.stardust -= stardust;
-            double radii = random.nextInt((int) Math.floor(this.getRadii())) * random.nextDouble();
+            int radii = (int)(random.nextInt(this.getRadii()) * random.nextFloat());
             Planet planet = new Planet(this, x, y, radii, stardust);
+            Star star = getStar(x, y);
+            if(star.contains(planet) != NOT_CONTAIN){
+                return;
+            }
+            Planet p1 = getPlanet(x, y);
+            if(p1!=null && p1.contains(planet)!=NOT_CONTAIN){
+                return;
+            }
             this.planets.put(planet, executor.scheduleAtFixedRate(planet, 0, 100, TimeUnit.MILLISECONDS));
+            LOG(String.format("A new Planet born on : %s, %s.", x, y));
         }
     }
 
@@ -109,7 +120,8 @@ public class Galaxy extends Base implements Runnable {
     }
 
     private boolean makeCalculate() {
-        return stardust / stardust * random.nextDouble() >= 1.8;
+        int base = Math.abs((int)Math.floor(stardust));
+        return base * random.nextFloat()/(stars.size() + planets.size())> Math.abs(random.nextInt(base));
     }
 
     public String getName() {

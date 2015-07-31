@@ -22,7 +22,6 @@ public class Star extends Base implements Runnable {
         this.stardust = stardust;
         this.galaxy = galaxy;
         this.random = galaxy.getRandom();
-        LOG(String.format("A new Star born on : %s, %s.", x, y));
     }
     public void run() {
         if(makeCalculate()){
@@ -36,5 +35,10 @@ public class Star extends Base implements Runnable {
 
     private void storm(){
         LOG(String.format("A sun storm happen on (%s, %s)", getX(), getY()));
+    }
+
+    @Override
+    public Random getRandom() {
+        return null;
     }
 }
