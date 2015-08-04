@@ -48,6 +48,26 @@ public class Galaxy extends Base implements Runnable {
         }
     }
 
+    /**
+     * 检测这个星系内的行星是否碰撞
+     */
+    public Planet checkHit(Planet planet){
+        for(Planet p : planets.keySet()){
+                if(planet!=p){
+                    if(planet.isTouch(p)){
+                        if(planet.hit(p)){
+                            planets.get(planet).cancel(true);
+                        }
+                        if(p.hit(planet)){
+                            planets.get(p).cancel(true);
+                        }
+                        return p;
+                    }
+                }
+            }
+        return null;
+    }
+
     public void die() {
         LOG(String.format("A Galaxy on : %s, %s die!", getX(), getY()));
         universe.removeGalaxy(this);
@@ -155,5 +175,15 @@ public class Galaxy extends Base implements Runnable {
 
     public Random getRandom() {
         return random;
+    }
+
+    public void stop(){
+        for(Star star : stars.keySet()){
+            star.stop();
+        }
+        for (Planet planet : planets.keySet()){
+            planet.stop();
+        }
+        super.stop();
     }
 }

@@ -12,7 +12,7 @@ package luo.gavin.virtual;
 import java.util.Random;
 
 
-public class Star extends Base implements Runnable {
+public class Star extends Mover implements Runnable {
     private Galaxy galaxy;
     private Random random;
     public Star(Galaxy galaxy, int x, int y, int radii, double stardust){

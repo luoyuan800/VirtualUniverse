@@ -1,6 +1,7 @@
-1438136519075
-\\d+
 *.class
 *.class
 */*.class
 */*/*.class
+*.opr
+*.xml
+.idea/workspace.xml

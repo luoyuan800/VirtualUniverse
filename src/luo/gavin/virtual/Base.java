@@ -1,5 +1,6 @@
 package luo.gavin.virtual;
 
+import luo.gavin.MathUtils;
 import luo.gavin.output.Output;
 
 import java.util.Random;
@@ -7,7 +8,7 @@ import java.util.Random;
 public abstract class Base {
     protected double stardust;
     private long age;
-    private int count;
+    protected int count;
     private int x;
     private int y;
     private int radii;
@@ -51,7 +52,8 @@ public abstract class Base {
     }
 
     public boolean isInside(int x, int y) {
-        return ((this.getX() + this.getRadii() >= x && this.getX() - getRadii() <= x) && (this.getY() + this.getRadii() >= y && this.getY() - this.getRadii() <= y));
+        return MathUtils.square(x - getX()) + MathUtils.square(y - getY()) <= MathUtils.square(getRadii());
+//        return ((this.getX() + this.getRadii() >= x && this.getX() - getRadii() <= x) && (this.getY() + this.getRadii() >= y && this.getY() - this.getRadii() <= y));
     }
 
     public int getX() {
@@ -102,5 +104,17 @@ public abstract class Base {
 
     public void stop(){
         LOG("Finished stop " + toString());
+    }
+
+    public void setX(int x) {
+        this.x = x;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+
+    public boolean hit(Base other){
+        return false;
     }
 }
