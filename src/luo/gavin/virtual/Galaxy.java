@@ -53,7 +53,7 @@ public class Galaxy extends Base{
      */
     public Planet checkHit(Planet planet){
         for(Planet p : planets.keySet()){
-                if(planet!=p){
+                if(planet!=p && !p.isDie()){
                     if(planet.isTouch(p)){
                         if(planet.hit(p)){
                             planets.get(planet).cancel(true);
