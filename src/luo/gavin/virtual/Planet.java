@@ -12,7 +12,7 @@ package luo.gavin.virtual;
 import java.util.Random;
 
 
-public class Planet extends Mover implements Runnable {
+public class Planet extends Mover{
     private Galaxy galaxy;
     public Planet(Galaxy galaxy, int x, int y, int radii, double stardust) {
         super(x, y, radii);
@@ -22,8 +22,8 @@ public class Planet extends Mover implements Runnable {
     }
 
     @Override
-    public void run() {
-
+    public void doRun() {
+        revolution();
     }
 
     public void revolution(){

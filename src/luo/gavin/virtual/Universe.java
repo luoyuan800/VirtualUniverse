@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -71,7 +72,7 @@ public class Universe implements Runnable {
         this.name = name;
         this.length = Math.abs(random.nextInt());
         this.width = Math.abs(random.nextInt());
-        this.galaxies = new HashMap<Galaxy, ScheduledFuture<?>>(50);
+        this.galaxies = new ConcurrentHashMap<Galaxy, ScheduledFuture<?>>(50);
         this.stardust = new Stardust(this);
         new Thread(new Manager(this)).start();
     }
@@ -104,17 +105,19 @@ public class Universe implements Runnable {
         if (makeCalculate()) {
             int length = random.nextInt(this.getLength() / 500);
             int width = random.nextInt(this.getWidth() / 500);
-            int radii = random.nextInt((length+width)/2)/(limit!=null? limit : 1000);
+            int radii = random.nextInt((length+width)/2)/(limit!=null? limit*100 : 1000);
             if(radii <= 0) return;
             int x = random.nextInt(this.getLength() / 2) * (random.nextBoolean() ? -1 : 1);
             int y = random.nextInt(this.getWidth() / 2) * (random.nextBoolean() ? -1 : 1);
-            if (getGalaxyByPoint(x, y) == null) {
+            Galaxy galaxyByPoint = getGalaxyByPoint(x, y);
+            if (galaxyByPoint == null) {
                 Galaxy galaxy = new Galaxy(x, y, radii, this);
                 for(Galaxy g : galaxies.keySet()){
                     if(g.isTouch(galaxy)){
-                        galaxy.setRadii(radii/2);
+                        galaxy.setRadii(radii/10);
                     }
-                    if(g.contains(galaxy) != Base.NOT_CONTAIN){
+                    if(g.isTouch(galaxy) || g.contains(galaxy) != Base.NOT_CONTAIN){
+                        LOG(String.format("Try to build a Galaxy on %s, %s, but touch an existing Galaxy[%s]", x, y, g));
                         return;
                     }
                 }
@@ -122,7 +125,8 @@ public class Universe implements Runnable {
                 galaxy.start();
                 galaxy.buildStar();
                 this.galaxies.put(galaxy, executor.scheduleAtFixedRate(galaxy, 0, period, TimeUnit.MILLISECONDS));
-
+            }else {
+                LOG(String.format("Try to build a Galaxy on %s, %s, but hit an existing Galaxy[%s]", x, y, galaxyByPoint));
             }
         }
     }
@@ -244,6 +248,7 @@ public class Universe implements Runnable {
                     System.out.println("status: Show current status of  the virtual");
                     System.out.println("start: Begging to run the Virtual");
                     System.out.println("search: Try to search a galaxy on the special pointer. Example: 'search galaxy: 1234567, 1234567'");
+                    System.out.println("manager status: Detail status");
                 } else if (command.equalsIgnoreCase("quit")) {
                     this.running = false;
                     System.out.println("Begging to stop Virtual");
@@ -283,6 +288,14 @@ public class Universe implements Runnable {
                         }catch (NumberFormatException e){
                             System.out.println("Input is invalid: " + e.getMessage());
                         }
+                    }
+                } else if(command.matches("manager status")){
+                    System.out.println("Galaxy limit is " + universe.limit);
+                    System.out.println(universe);
+                    System.out.println("----");
+                    for(Galaxy galaxy : universe.galaxies.keySet()){
+                        System.out.println(universe.galaxies.get(galaxy));
+                        System.out.println(galaxy);
                     }
                 }
             }

@@ -11,34 +11,34 @@ package luo.gavin.virtual;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 
-public class Galaxy extends Base implements Runnable {
+public class Galaxy extends Base{
     private String name;
     private Universe universe;
     private Random random;
     private Map<Star, ScheduledFuture<?>> stars;
     private Map<Planet, ScheduledFuture<?>> planets;
     private boolean black;
-    private boolean die;
     private ScheduledExecutorService executor;
 
     public Galaxy(int x, int y, int radii, Universe universe) {
         super(x, y, radii);
         this.universe = universe;
         random = new Random(universe.getSeed());
-        stars = new HashMap<Star, ScheduledFuture<?>>();
-        planets = new HashMap<Planet, ScheduledFuture<?>>();
+        stars = new ConcurrentHashMap<Star, ScheduledFuture<?>>();
+        planets = new ConcurrentHashMap<Planet, ScheduledFuture<?>>();
         executor = universe.getExecutor();
         stardust = universe.getStardust().getStardustWeigh(x, y);
     }
 
-    public void run() {
-        if (stardust != 0 && stars.size() != 0) {
+    public void doRun() {
+        if (stardust > 0 && stars.size() != 0) {
             buildPlanet();
             age();
         } else if (stardust <= 0 && stars.size() != 0 && !isBlack()) {
@@ -86,13 +86,20 @@ public class Galaxy extends Base implements Runnable {
             int x = pointer[0];
             int y = pointer[1];
             double stardust = this.stardust * random.nextDouble() * random.nextFloat() * random.nextFloat();
-            this.stardust -= stardust;
-            int radii = (int)(random.nextInt(this.getRadii()) * random.nextFloat());
-            Star star = new Star(this, x, y, radii, stardust);
+            if(stardust<=this.stardust/10) {
+                this.stardust -= stardust;
+                int radii = (int) (random.nextInt(this.getRadii()) * random.nextFloat());
+                Star star = new Star(this, x, y, radii, stardust);
+                for(Star s : stars.keySet()){
+                    if(s.isTouch(star)){
+                        return;
+                    }
+                }
+                this.stars.put(star, executor.scheduleAtFixedRate(star, 0, 100, TimeUnit.MILLISECONDS));
+                LOG(String.format("A new Star born on : %s, %s.", x, y));
+                star.start();
+            }
             next = random.nextBoolean();
-            this.stars.put(star, executor.scheduleAtFixedRate(star, 0, 100, TimeUnit.MILLISECONDS));
-            LOG(String.format("A new Star born on : %s, %s.", x, y));
-            star.start();
         }
     }
 
@@ -149,6 +156,9 @@ public class Galaxy extends Base implements Runnable {
 
     private boolean makeCalculate() {
         int base = Math.abs((int)Math.floor(stardust));
+        if(base <=0){
+            return false;
+        }
         int next = random.nextInt(base);
         return next * (stars.size() + planets.size()) <= base;
     }
@@ -162,16 +172,34 @@ public class Galaxy extends Base implements Runnable {
     }
 
     public String toString() {
-        return String.format("Galaxy(age %s) on %s,%s , have %s stars and %s planets.", getAge(), getX(), getY(), stars.size(), planets.size());
+        return String.format("Galaxy(age %s) on %s,%s , have %s stars and %s survival planets and %s death planets.", getAge(), getX(), getY(), stars.size(), getSurvivalPlanets(), getDiePlanets());
+    }
+
+    public int getSurvivalPlanets(){
+        int num = 0;
+        for(Planet planet : planets.keySet()){
+            if(!planet.die){
+                num ++;
+            }
+        }
+        return num;
+    }
+
+    public int getDiePlanets(){
+        int num = 0;
+        for(Planet planet : planets.keySet()){
+            if(planet.die){
+                num ++;
+            }
+        }
+        return num;
     }
 
     public boolean isBlack() {
         return black;
     }
 
-    public boolean isDie() {
-        return die;
-    }
+
 
     public Random getRandom() {
         return random;

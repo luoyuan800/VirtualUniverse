@@ -28,6 +28,11 @@ public class ReadTxtToArray {
         }
 
         @Override
+        protected void doRun() {
+
+        }
+
+        @Override
         public Random getRandom() {
             return null;
         }
