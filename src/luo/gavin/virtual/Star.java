@@ -27,6 +27,10 @@ public class Star extends Mover implements Runnable {
         }
     }
 
+    public void revolution() {
+    //Do nothing
+    }
+
     private boolean makeCalculate() {
         return stardust / stardust * random.nextDouble() >= 1.8;
     }
